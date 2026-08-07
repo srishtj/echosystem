@@ -6,4 +6,7 @@ __pycache__/
 celerybeat-schedule
 celerybeat-schedule-shm
 celerybeat-schedule-wal
-test_*.py
+reports.db
+.DS_Store
+.pytest_cache/
+.coverage

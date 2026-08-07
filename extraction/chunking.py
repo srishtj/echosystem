@@ -1,6 +1,6 @@
 import tiktoken
 
-enc = tiktoken.get_encoding("c1100k_base")
+enc = tiktoken.get_encoding("cl100k_base")
 
 def dynamic_chunks(text: str, max_tokens: int = 3000):
     words = text.split()
@@ -12,6 +12,6 @@ def dynamic_chunks(text: str, max_tokens: int = 3000):
             current, current_tokens = [], 0
         current.append(w)
         current_tokens += t
-        if current:
-            chunks.append(" ".join(current))
-        return chunks
+    if current:
+        chunks.append(" ".join(current))
+    return chunks
