@@ -2,6 +2,8 @@ import os
 import re
 from neo4j import GraphDatabase
 
+from graph.sentiment import POSITIVE_MARKERS, NEGATIVE_MARKERS
+
 ANTONYM_PAIRS = [
     ("bankrupt", "profitable"),
     ("bankrupt", "raised"),
@@ -22,15 +24,6 @@ ANTONYM_PAIRS = [
     ("fine", "cleared"),
     ("sued", "settlement"),
 ]
-
-POSITIVE_MARKERS = {
-    "profit", "gain", "growth", "surge", "raised", "hired", "won",
-    "approved", "cleared", "launched", "expanded", "record", "high",
-}
-NEGATIVE_MARKERS = {
-    "loss", "decline", "fell", "bankrupt", "laid off", "fired", "recall",
-    "fraud", "fine", "sued", "shutdown", "low", "crash", "default",
-}
 
 def _keyword_conflict(claim_a: str, claim_b: str) -> bool:
     a = claim_a.lower()
@@ -65,7 +58,9 @@ def _embedding_conflict(claim_a: str, claim_b: str, similarity_threshold: float 
         )
  
     if not hasattr(_embedding_conflict, "_model"):
-        _embedding_conflict._model = SentenceTransformer("all-MiniLM-L6-v2")
+        # device="cpu": letting torch auto-select MPS crashes Celery's prefork
+        # worker pool on Apple Silicon (see retrieval/embed.py for the same fix).
+        _embedding_conflict._model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
  
     model = _embedding_conflict._model
     emb_a = model.encode(claim_a, convert_to_tensor=True)
@@ -91,7 +86,7 @@ def _llm_conflict(claim_a: str, claim_b: str) -> bool:
     client = instructor.from_groq(Groq(), mode=instructor.Mode.JSON)
  
     verdict: ConflictVerdict = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="llama-3.1-8b-instant",
         response_model=ConflictVerdict,
         max_retries=2,
         messages=[
