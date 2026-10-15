@@ -1,12 +1,35 @@
+# Secrets and local configuration (keep .env.example tracked)
 .env
-venv/
-__pycache__/
-*.pyc
+.env.*
+!.env.example
+*.pem
+*.key
+credentials*.json
 
+# Python
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Local state and generated output
+reports.db
+*.db
+*.sqlite3
 celerybeat-schedule
 celerybeat-schedule-shm
 celerybeat-schedule-wal
-reports.db
+celerybeat.pid
+*.log
+
+# Machine / editor specific
 .DS_Store
-.pytest_cache/
-.coverage
+.idea/
+.vscode/
+.claude/settings.local.json

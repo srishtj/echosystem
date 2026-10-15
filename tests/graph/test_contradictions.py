@@ -42,17 +42,19 @@ def test_keyword_conflict(claim_a, claim_b, expected):
     assert _keyword_conflict(claim_a, claim_b) is expected
 
 
-def test_embedding_conflict_low_similarity_is_flagged(monkeypatch):
+def _install_fake_embeddings(monkeypatch, similarity):
     fake_module = types.ModuleType("sentence_transformers")
+    calls = []
 
     class FakeModel:
         def encode(self, text, convert_to_tensor=True):
+            calls.append(text)
             return text
 
     class FakeUtil:
         @staticmethod
         def cos_sim(a, b):
-            return 0.1  # below the default 0.3 threshold -> conflict
+            return similarity
 
     fake_module.SentenceTransformer = lambda name, device=None: FakeModel()
     fake_module.util = FakeUtil()
@@ -62,32 +64,30 @@ def test_embedding_conflict_low_similarity_is_flagged(monkeypatch):
 
     if hasattr(contradictions._embedding_conflict, "_model"):
         delattr(contradictions._embedding_conflict, "_model")
+    return contradictions, calls
 
-    assert contradictions._embedding_conflict("claim A", "claim B") is True
+
+PROFIT = "Acme reported a record profit in Q2."
+LOSS = "Acme reported a loss in Q2."
 
 
-def test_embedding_conflict_high_similarity_is_not_flagged(monkeypatch):
-    fake_module = types.ModuleType("sentence_transformers")
+def test_embedding_conflict_flags_opposed_claims_about_the_same_thing(monkeypatch):
+    contradictions, _ = _install_fake_embeddings(monkeypatch, similarity=0.8)
+    assert contradictions._embedding_conflict(PROFIT, LOSS) is True
 
-    class FakeModel:
-        def encode(self, text, convert_to_tensor=True):
-            return text
 
-    class FakeUtil:
-        @staticmethod
-        def cos_sim(a, b):
-            return 0.95  # above the default 0.3 threshold -> no conflict
+def test_embedding_conflict_ignores_opposed_wording_in_unrelated_claims(monkeypatch):
+    contradictions, _ = _install_fake_embeddings(monkeypatch, similarity=0.4)
+    assert contradictions._embedding_conflict(PROFIT, LOSS) is False
 
-    fake_module.SentenceTransformer = lambda name, device=None: FakeModel()
-    fake_module.util = FakeUtil()
-    monkeypatch.setitem(sys.modules, "sentence_transformers", fake_module)
 
-    import graph.contradictions as contradictions
-
-    if hasattr(contradictions._embedding_conflict, "_model"):
-        delattr(contradictions._embedding_conflict, "_model")
-
-    assert contradictions._embedding_conflict("claim A", "claim B") is False
+def test_embedding_conflict_does_not_treat_dissimilarity_as_conflict(monkeypatch):
+    contradictions, calls = _install_fake_embeddings(monkeypatch, similarity=0.05)
+    # Neither claim carries opposing markers, so low similarity alone must not flag them.
+    assert contradictions._embedding_conflict(
+        "Acme is headquartered in Austin.", "Acme was founded in 2010."
+    ) is False
+    assert calls == []  # the keyword check short-circuits before any embedding work
 
 
 def test_llm_conflict_returns_verdict_from_client(monkeypatch):
