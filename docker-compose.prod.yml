@@ -13,7 +13,8 @@ services:
   api:
     build: .
     ports:
-      - "8000:8000"
+      # Bound to localhost: the dashboard reaches the API over the compose network.
+      - "127.0.0.1:8000:8000"
     depends_on:
       redis:
         condition: service_healthy
@@ -57,10 +58,11 @@ services:
     restart: unless-stopped
 
   dashboard:
-    build:
-      context: ./dashboard
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    build: ./dashboard
+    environment:
+      # Read at runtime by the dashboard's server-side proxy; never sent to the browser.
+      API_URL: http://api:8000
+      API_KEY: ${API_KEY:-}
     ports:
       - "3000:3000"
     depends_on:

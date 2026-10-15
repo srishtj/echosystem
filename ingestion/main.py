@@ -61,9 +61,22 @@ app = FastAPI(title="EchoSystem-AI Ingestion")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+def cors_settings() -> dict:
+    """Origins allowed to call the API from a browser.
+
+    CORS_ORIGINS (comma-separated) overrides the default of any localhost port.
+    The bundled dashboard does not need this: it calls the API through its own
+    server-side proxy. It matters only for other browser clients.
+    """
+    origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()]
+    if origins:
+        return {"allow_origins": origins}
+    return {"allow_origin_regex": r"http://localhost:\d+"}
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"http://localhost:\d+",
+    **cors_settings(),
     allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["*"],
 )

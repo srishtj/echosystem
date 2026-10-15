@@ -47,7 +47,19 @@ def _keyword_conflict(claim_a: str, claim_b: str) -> bool:
     return False
 
 
-def _embedding_conflict(claim_a: str, claim_b: str, similarity_threshold: float = 0.3,) -> bool:
+def _embedding_conflict(claim_a: str, claim_b: str, min_similarity: float = 0.6) -> bool:
+    """Keyword conflict, restricted to claims that are about the same thing.
+
+    Embedding similarity cannot tell a contradiction from an unrelated claim
+    (two claims about one company are often dissimilar without conflicting), so it
+    is only used as a gate: the pair must already read as opposed by
+    _keyword_conflict AND be at least `min_similarity` close in embedding space.
+    That drops pairs like "record profit" vs "fined over a data breach" that the
+    keyword check alone would flag. The 0.6 default was only eyeballed on a few
+    hand-written claim pairs with all-MiniLM-L6-v2; it has not been tuned.
+    """
+    if not _keyword_conflict(claim_a, claim_b):
+        return False
 
     try:
         from sentence_transformers import SentenceTransformer, util
@@ -56,18 +68,18 @@ def _embedding_conflict(claim_a: str, claim_b: str, similarity_threshold: float 
             "sentence-transformers is required for embedding-based conflict "
             "detection. Run: pip install sentence-transformers"
         )
- 
+
     if not hasattr(_embedding_conflict, "_model"):
         # device="cpu": letting torch auto-select MPS crashes Celery's prefork
         # worker pool on Apple Silicon (see retrieval/embed.py for the same fix).
         _embedding_conflict._model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
- 
+
     model = _embedding_conflict._model
     emb_a = model.encode(claim_a, convert_to_tensor=True)
     emb_b = model.encode(claim_b, convert_to_tensor=True)
     similarity = float(util.cos_sim(emb_a, emb_b))
- 
-    return similarity < similarity_threshold
+
+    return similarity >= min_similarity
 
 def _llm_conflict(claim_a: str, claim_b: str) -> bool:
     try:
@@ -114,7 +126,8 @@ def claims_conflict(claim_a: str, claim_b: str) -> bool:
  
     Strategy is controlled by the CONFLICT_STRATEGY environment variable:
       "keyword"   — fast heuristic, no extra cost       (default)
-      "embedding" — sentence-transformer cosine check
+      "embedding" — keyword heuristic, but only for claims whose embeddings are
+                    similar enough to be about the same thing
       "llm"       — Groq LLM judgment via Instructor
     """
     if CONFLICT_STRATEGY == "llm":
