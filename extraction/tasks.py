@@ -19,7 +19,7 @@ client = instructor.from_groq(
 
 def _extract_chunk(title: str, text: str) -> ExtractionResult:
     return client.chat.completions.create(
-        model="llama-3.1-8b-instant",
+        model="openai/gpt-oss-20b",
         response_model=ExtractionResult,
         max_retries=2,
         messages=[{

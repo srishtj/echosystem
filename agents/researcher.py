@@ -6,7 +6,7 @@ from groq import Groq
 from retrieval.hybrid import hybrid_search
 from agents.state import ResearchState
 
-client = Groq(api_key=os.environ["GROQ_API_KEY"])
+client = Groq(api_key=os.environ["GROQ_API_KEY"], max_retries=8)
 
 
 def researcher_node(state: ResearchState) -> ResearchState:
@@ -30,7 +30,7 @@ Source context:
 Every factual claim must be traceable to the context above."""
 
     resp = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-oss-120b",
         messages=[{"role": "user", "content": prompt}],
     )
 
