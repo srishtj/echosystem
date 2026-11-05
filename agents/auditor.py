@@ -7,7 +7,7 @@ from groq import Groq
 from agents.state import ResearchState, AuditVerdict
 
 audit_client = instructor.from_groq(
-    Groq(api_key=os.environ["GROQ_API_KEY"]), mode=instructor.Mode.JSON
+    Groq(api_key=os.environ["GROQ_API_KEY"], max_retries=8), mode=instructor.Mode.JSON
 )
 
 
@@ -24,7 +24,7 @@ SOURCE CONTEXT:
 {state['retrieved_context']}
 """
     verdict: AuditVerdict = audit_client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-oss-120b",
         response_model=AuditVerdict,
         max_retries=2,
         messages=[{"role": "user", "content": prompt}],

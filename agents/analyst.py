@@ -136,7 +136,7 @@ def analyst_node(state: AskState) -> AskState:
 
     for _ in range(MAX_TOOL_ROUNDS):
         resp = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             messages=messages,
             tools=TOOLS,
             tool_choice="auto",
@@ -179,7 +179,7 @@ def analyst_node(state: AskState) -> AskState:
     messages.append(
         {"role": "user", "content": "Give your best final answer now, based only on the tool results above."}
     )
-    resp = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=messages)
+    resp = client.chat.completions.create(model="openai/gpt-oss-120b", messages=messages)
     input_tokens += resp.usage.prompt_tokens
     output_tokens += resp.usage.completion_tokens
 

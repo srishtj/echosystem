@@ -33,3 +33,12 @@ body {
   background: var(--color-accent-soft);
   color: var(--color-accent-dark);
 }
+
+.report-md > * + * { margin-top: 0.75rem; }
+.report-md strong { font-weight: 600; }
+.report-md ol, .report-md ul { padding-left: 1.25rem; }
+.report-md ol { list-style: decimal; }
+.report-md ul { list-style: disc; }
+.report-md table { display: block; width: 100%; overflow-x: auto; border-collapse: collapse; font-size: 0.8rem; }
+.report-md th, .report-md td { border: 1px solid rgba(42, 30, 23, 0.14); padding: 0.4rem 0.55rem; text-align: left; vertical-align: top; }
+.report-md th { font-weight: 600; background: rgba(42, 30, 23, 0.05); }

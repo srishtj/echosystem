@@ -11,7 +11,9 @@ driver = GraphDatabase.driver(
 )
 
 
-def hybrid_search(query: str, top_k: int = 5):
+def hybrid_search(query: str, top_k: int | None = None):
+    if top_k is None:
+        top_k = int(os.environ.get("RETRIEVAL_TOP_K") or 5)
     query_vector = embed_text(query)
     hits = _get_qdrant().query_points(
         collection_name="articles", query=query_vector, limit=top_k

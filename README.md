@@ -22,7 +22,7 @@ The API returns immediately and a Celery worker does the rest (`poll_topic` in `
 
 1. Ask NewsAPI for up to 8 recent English articles.
 2. Fetch each page and strip the HTML. If that leaves under 200 characters, use the text NewsAPI returned instead.
-3. Split the text into chunks of about 3000 tokens and extract entities and relations from each one with `llama-3.1-8b-instant` through Instructor. The output is validated against a Pydantic schema.
+3. Split the text into chunks of about 3000 tokens and extract entities and relations from each one with `openai/gpt-oss-20b` through Instructor. The output is validated against a Pydantic schema.
 4. Embed each chunk into Qdrant. Write entities, relations and claims to Neo4j, checking each new claim against the entity's existing ones for contradictions.
 5. Run the researcher/auditor loop on the topic and save the report plus run metrics (duration, tokens, retries, flagged claims) to a local SQLite file.
 
@@ -91,6 +91,8 @@ celery -A ingestion.celery_app beat --loglevel=info    # terminal 3
 
 cd dashboard && npm install && npm run dev             # terminal 4, http://localhost:3000
 ```
+
+On Groq's free tier, `openai/gpt-oss-120b` allows 8,000 tokens per minute, and the default five retrieved chunks can go over that. If a report fails with a 413 error, set `RETRIEVAL_TOP_K=3`.
 
 The API and workers won't start without `GROQ_API_KEY`, `NEO4J_URI`, `NEO4J_USER` and `NEO4J_PASSWORD`. `NEWSAPI_KEY` is needed for `/api/ingest`. `docker-compose.yml` uses `NEO4J_PASSWORD` as the local Neo4j password, but Neo4j only applies it the first time its data volume is created.
 
@@ -184,7 +186,7 @@ More detail, including how each was checked, is in [docs/ENGINEERING_NOTES.md](d
 - **Three attempts, then label and save.** It bounds token spend. Some reports end up marked UNVERIFIED. The alternatives were dropping them or retrying indefinitely.
 - **Keep contradictions instead of resolving them.** Both claims stay in the graph. Detection is heuristic, though (see below).
 - **Keyword sentiment.** It's a word-list lookup because an LLM call per claim would hit the extraction model's rate limit. It's crude.
-- **Two model sizes.** `llama-3.1-8b-instant` does extraction and the optional LLM contradiction check. `llama-3.3-70b-versatile` drafts, audits and runs the Ask agent.
+- **Two model sizes.** `openai/gpt-oss-20b` does extraction and the optional LLM contradiction check. `openai/gpt-oss-120b` drafts, audits and runs the Ask agent.
 - **A single shared API key.** It's a minimal guard, not user authentication.
 
 ## Limitations

@@ -98,7 +98,7 @@ def _llm_conflict(claim_a: str, claim_b: str) -> bool:
     client = instructor.from_groq(Groq(), mode=instructor.Mode.JSON)
  
     verdict: ConflictVerdict = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
+        model="openai/gpt-oss-20b",
         response_model=ConflictVerdict,
         max_retries=2,
         messages=[

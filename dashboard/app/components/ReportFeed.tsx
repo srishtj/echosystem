@@ -1,5 +1,7 @@
 'use client';
 
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import useSWR from 'swr';
 import { API_URL, apiFetch } from '../lib/api';
 
@@ -19,6 +21,11 @@ const STATUS_STYLES: Record<string, string> = {
   pass: 'bg-positive-soft text-positive',
   fail: 'bg-negative-soft text-negative',
 };
+
+// Models write Markdown, sometimes with <br> inside table cells and 【source 0】
+// citation marks. Raw HTML stays disabled, since report text comes from the web.
+const cleanReport = (text: string) =>
+  text.replace(/<br\s*\/?>/gi, ' ').replace(/【([^】]*)】/g, ' [$1]');
 
 export default function ReportFeed({
   onShowInGraph,
@@ -64,7 +71,9 @@ export default function ReportFeed({
             </span>
             <span>Audit retries: {r.retry_count}</span>
           </div>
-          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink">{r.final_report}</p>
+          <div className="report-md mt-3 text-sm leading-relaxed text-ink">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{cleanReport(r.final_report)}</ReactMarkdown>
+          </div>
           {r.related_entities.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-1.5">
               {r.related_entities.map((entity) => (

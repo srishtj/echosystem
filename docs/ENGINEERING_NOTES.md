@@ -50,7 +50,7 @@ comparison:
   doesn't check that the two claims are about the same fact or time period.
 - `embedding`: the same keyword check, but only for pairs whose `all-MiniLM-L6-v2` cosine similarity
   is at least 0.6.
-- `llm`: `llama-3.1-8b-instant` is asked whether the pair contradicts. It's the only strategy that can
+- `llm`: `openai/gpt-oss-20b` is asked whether the pair contradicts. It's the only strategy that can
   read meaning, and it costs one call per existing claim.
 
 The embedding strategy originally flagged a pair when similarity was *below* 0.3. That treated
